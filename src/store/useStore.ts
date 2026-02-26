@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { format, isSameDay, subDays } from 'date-fns';
+import { supabase, getGuestId } from '../lib/supabaseClient';
 
 export type DzikirType = 'pagi' | 'petang';
 
@@ -21,6 +22,13 @@ interface AppState {
     type: DzikirType | null;
     currentIndex: number;
     progress: Record<string, number>; // id -> count
+    date: string | null;
+  };
+  
+  dailyProgress: {
+    date: string | null;
+    pagi: Record<string, number>;
+    petang: Record<string, number>;
   };
 
   startSession: (type: DzikirType) => void;
@@ -31,6 +39,10 @@ interface AppState {
   resetSession: () => void;
   
   getHistoryForDate: (date: Date) => HistoryEntry;
+  
+  // Supabase sync
+  fetchHistoryFromSupabase: () => Promise<void>;
+  syncHistoryToSupabase: (entry: HistoryEntry) => Promise<void>;
 }
 
 const getTodayString = () => format(new Date(), 'yyyy-MM-dd');
@@ -47,28 +59,69 @@ export const useStore = create<AppState>()(
         type: null,
         currentIndex: 0,
         progress: {},
+        date: null,
+      },
+      
+      dailyProgress: {
+        date: null,
+        pagi: {},
+        petang: {},
       },
 
-      startSession: (type) => set({
-        currentSession: {
-          type,
-          currentIndex: 0,
-          progress: {},
+      startSession: (type) => set((state) => {
+        const todayStr = getTodayString();
+        
+        // Ensure dailyProgress is for today
+        let currentDailyProgress = state.dailyProgress;
+        if (!currentDailyProgress || currentDailyProgress.date !== todayStr) {
+          currentDailyProgress = {
+            date: todayStr,
+            pagi: {},
+            petang: {},
+          };
         }
+
+        // If resuming the same session from today, keep progress
+        if (state.currentSession.type === type && state.currentSession.date === todayStr) {
+          return { dailyProgress: currentDailyProgress };
+        }
+        
+        // Otherwise start fresh, but load progress from dailyProgress
+        return {
+          dailyProgress: currentDailyProgress,
+          currentSession: {
+            type,
+            currentIndex: 0,
+            progress: currentDailyProgress[type] || {},
+            date: todayStr,
+          }
+        };
       }),
 
       incrementProgress: (id, target) => set((state) => {
         const currentCount = state.currentSession.progress[id] || 0;
         if (currentCount >= target) return state;
         
+        const newProgress = {
+          ...state.currentSession.progress,
+          [id]: currentCount + 1,
+        };
+
+        const type = state.currentSession.type;
+        const newDailyProgress = state.dailyProgress 
+          ? { ...state.dailyProgress } 
+          : { date: getTodayString(), pagi: {}, petang: {} };
+          
+        if (type) {
+          newDailyProgress[type] = newProgress;
+        }
+
         return {
           currentSession: {
             ...state.currentSession,
-            progress: {
-              ...state.currentSession.progress,
-              [id]: currentCount + 1,
-            }
+            progress: newProgress
           },
+          dailyProgress: newDailyProgress,
           totalDzikir: state.totalDzikir + 1,
         };
       }),
@@ -123,6 +176,12 @@ export const useStore = create<AppState>()(
           }
         }
 
+        // Trigger Supabase sync asynchronously
+        const updatedEntry = history.find(h => h.date === todayStr);
+        if (updatedEntry) {
+          get().syncHistoryToSupabase(updatedEntry);
+        }
+
         return {
           history,
           currentStreak: streak,
@@ -131,6 +190,7 @@ export const useStore = create<AppState>()(
             type: null,
             currentIndex: 0,
             progress: {},
+            date: null,
           }
         };
       }),
@@ -140,6 +200,7 @@ export const useStore = create<AppState>()(
           type: null,
           currentIndex: 0,
           progress: {},
+          date: null,
         }
       }),
 
@@ -151,9 +212,70 @@ export const useStore = create<AppState>()(
           petangCompleted: false,
         };
       },
+
+      fetchHistoryFromSupabase: async () => {
+        if (!supabase) return; // Skip if Supabase is not configured
+        try {
+          const guestId = getGuestId();
+          const { data, error } = await supabase
+            .from('User_History')
+            .select('*')
+            .eq('guest_id', guestId);
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            const history: HistoryEntry[] = data.map(item => ({
+              date: item.date,
+              pagiCompleted: item.pagi_completed,
+              petangCompleted: item.petang_completed,
+            }));
+
+            // Calculate streak based on fetched history
+            let streak = 0;
+            let currentDate = new Date();
+            while (true) {
+              const dateStr = format(currentDate, 'yyyy-MM-dd');
+              const entry = history.find(h => h.date === dateStr);
+              if (entry && (entry.pagiCompleted || entry.petangCompleted)) {
+                streak++;
+                currentDate = subDays(currentDate, 1);
+              } else {
+                break;
+              }
+            }
+
+            set({ history, currentStreak: streak });
+          }
+        } catch (error) {
+          console.error('Error fetching history from Supabase:', error);
+        }
+      },
+
+      syncHistoryToSupabase: async (entry: HistoryEntry) => {
+        if (!supabase) return; // Skip if Supabase is not configured
+        try {
+          const guestId = getGuestId();
+          const { error } = await supabase
+            .from('User_History')
+            .upsert({
+              guest_id: guestId,
+              date: entry.date,
+              pagi_completed: entry.pagiCompleted,
+              petang_completed: entry.petangCompleted,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'guest_id, date'
+            });
+
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error syncing history to Supabase:', error);
+        }
+      },
     }),
     {
-      name: 'dzikir-storage',
+      name: 'dzikir-storage-v2',
     }
   )
 );

@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router';
 import { Home } from './pages/Home';
 import { History } from './pages/History';
 import { DzikirDetail } from './pages/DzikirDetail';
 import { BottomNav } from './components/BottomNav';
+import { useStore } from './store/useStore';
 
 function Layout() {
   return (
@@ -14,6 +16,12 @@ function Layout() {
 }
 
 export default function App() {
+  const fetchHistoryFromSupabase = useStore(state => state.fetchHistoryFromSupabase);
+
+  useEffect(() => {
+    fetchHistoryFromSupabase();
+  }, [fetchHistoryFromSupabase]);
+
   return (
     <BrowserRouter>
       <Routes>

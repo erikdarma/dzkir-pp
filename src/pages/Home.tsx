@@ -1,14 +1,16 @@
 import { Link } from 'react-router';
-import { Flame, Sunrise, Sunset, Bell, Infinity, Trophy, Play, Menu } from 'lucide-react';
+import { Flame, Sunrise, Sunset, Bell, Infinity, Trophy, Play, Menu, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 
 export function Home() {
-  const { currentStreak, totalDzikir, lastCompleted } = useStore();
+  const { currentStreak, totalDzikir, lastCompleted, getHistoryForDate } = useStore();
 
   const formattedLastCompleted = lastCompleted 
     ? format(new Date(lastCompleted), "dd MMM, HH:mm")
     : "Belum ada";
+
+  const todayHistory = getHistoryForDate(new Date());
 
   return (
     <div className="flex flex-col h-full">
@@ -56,7 +58,7 @@ export function Home() {
           <h2 className="text-lg font-medium px-1 text-[#171D1A]">Daily Adhkar</h2>
           
           {/* Dzikir Pagi */}
-          <div className="group relative flex flex-col bg-[#EFF5F1] border border-[#BFC9C2] rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-200">
+          <Link to="/dzikir/pagi" className="group relative flex flex-col bg-[#EFF5F1] border border-[#BFC9C2] rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-200 block">
             <div className="flex items-stretch">
               <div className="flex-1 p-4 flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-[#3D6373]">
@@ -80,15 +82,22 @@ export function Home() {
               </div>
             </div>
             <div className="border-t border-[#BFC9C2] p-2 flex justify-end bg-[#EFF5F1]">
-              <Link to="/dzikir/pagi" className="h-10 px-6 rounded-full bg-[#006C4C] text-white text-sm font-medium hover:shadow-md active:shadow-none transition-shadow flex items-center gap-2">
-                <Play className="w-[18px] h-[18px] fill-current" />
-                Start
-              </Link>
+              {todayHistory.pagiCompleted ? (
+                <div className="h-10 px-6 rounded-full bg-[#E8F5EE] text-[#006C4C] text-sm font-medium flex items-center gap-2 hover:bg-[#D0E8D9] transition-colors">
+                  <CheckCircle2 className="w-[18px] h-[18px]" />
+                  Finished
+                </div>
+              ) : (
+                <div className="h-10 px-6 rounded-full bg-[#006C4C] text-white text-sm font-medium hover:shadow-md active:shadow-none transition-shadow flex items-center gap-2">
+                  <Play className="w-[18px] h-[18px] fill-current" />
+                  Start
+                </div>
+              )}
             </div>
-          </div>
+          </Link>
 
           {/* Dzikir Petang */}
-          <div className="group relative flex flex-col bg-[#EFF5F1] border border-[#BFC9C2] rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-200">
+          <Link to="/dzikir/petang" className="group relative flex flex-col bg-[#EFF5F1] border border-[#BFC9C2] rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-200 block">
             <div className="flex items-stretch">
               <div className="flex-1 p-4 flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-[#4D6357]">
@@ -112,12 +121,19 @@ export function Home() {
               </div>
             </div>
             <div className="border-t border-[#BFC9C2] p-2 flex justify-end bg-[#EFF5F1]">
-              <Link to="/dzikir/petang" className="h-10 px-6 rounded-full border border-[#707973] text-[#006C4C] text-sm font-medium hover:bg-[#006C4C]/5 active:bg-[#006C4C]/10 transition-colors flex items-center gap-2">
-                <Play className="w-[18px] h-[18px] fill-current" />
-                Start
-              </Link>
+              {todayHistory.petangCompleted ? (
+                <div className="h-10 px-6 rounded-full bg-[#E8F5EE] text-[#006C4C] text-sm font-medium flex items-center gap-2 hover:bg-[#D0E8D9] transition-colors">
+                  <CheckCircle2 className="w-[18px] h-[18px]" />
+                  Finished
+                </div>
+              ) : (
+                <div className="h-10 px-6 rounded-full border border-[#707973] text-[#006C4C] text-sm font-medium hover:bg-[#006C4C]/5 active:bg-[#006C4C]/10 transition-colors flex items-center gap-2">
+                  <Play className="w-[18px] h-[18px] fill-current" />
+                  Start
+                </div>
+              )}
             </div>
-          </div>
+          </Link>
         </section>
 
         <section className="grid grid-cols-2 gap-4 pb-4">

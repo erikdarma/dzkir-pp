@@ -138,29 +138,30 @@ export function DzikirDetail() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Bottom Sheet Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[1px] transition-opacity duration-200">
-          <div className="relative w-full max-w-[312px] bg-[#F5FBF7] rounded-[28px] shadow-lg overflow-hidden flex flex-col">
-            <div className="flex flex-col items-center pt-6 px-6">
-              <CheckCircle2 className="w-8 h-8 text-[#4D6357] mb-4" />
-              <h4 className="text-[#171D1A] text-2xl font-normal text-center mb-4">Target Tercapai!</h4>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[1px] transition-opacity duration-200">
+          <div className="w-full max-w-md bg-[#F5FBF7] rounded-t-[28px] shadow-lg overflow-hidden flex flex-col animate-in slide-in-from-bottom-full duration-300">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-4 mb-2"></div>
+            <div className="flex flex-col items-center pt-2 px-6">
+              <CheckCircle2 className="w-10 h-10 text-[#006C4C] mb-3" />
+              <h4 className="text-[#171D1A] text-2xl font-bold text-center mb-2">Target Tercapai!</h4>
             </div>
             <div className="px-6 pb-6">
               <p className="text-[#404944] text-base leading-6 text-center">
                 Alhamdulillah, Anda telah menyelesaikan bacaan ini. Lanjut ke bacaan berikutnya?
               </p>
             </div>
-            <div className="flex flex-col gap-2 p-6 pt-0">
+            <div className="flex flex-col gap-3 p-6 pt-0 pb-8">
               <button 
                 onClick={handleNext}
-                className="w-full h-10 px-6 rounded-full bg-[#006C4C] text-white text-sm font-medium tracking-wide hover:shadow-md active:shadow-none transition-shadow flex items-center justify-center"
+                className="w-full h-12 px-6 rounded-full bg-[#006C4C] text-white text-base font-medium tracking-wide hover:shadow-md active:shadow-none transition-shadow flex items-center justify-center"
               >
                 Lanjut Sekarang
               </button>
               <button 
                 onClick={() => setShowModal(false)}
-                className="w-full h-10 px-6 rounded-full text-[#006C4C] text-sm font-medium tracking-wide hover:bg-[#006C4C]/10 active:bg-[#006C4C]/10 transition-colors flex items-center justify-center"
+                className="w-full h-12 px-6 rounded-full text-[#006C4C] text-base font-medium tracking-wide hover:bg-[#006C4C]/10 active:bg-[#006C4C]/10 transition-colors flex items-center justify-center"
               >
                 Tutup
               </button>
